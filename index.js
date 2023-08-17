@@ -374,7 +374,7 @@ const createPdf = async (
           //if (!chunks[i + 1].includes("0")) {
           let item = chunks[i] + " " + chunks[i + 1];
 
-          if (!chunks[i + 2].includes("0")) {
+          if (chunks[i + 2] && !chunks[i + 2].includes("0")) {
             item = item + " " + chunks[i + 2];
             i++;
           }
@@ -434,7 +434,33 @@ const createPdf = async (
   let itemsHeight = 494;
 
   while (i < itemsArray.length && itemsHeight > 26) {
+    let bool = false;
     if (
+      carDescription.replace(/\s+/g, "") === itemsArray[i].replace(/\s+/g, "")
+    ) {
+      bool = true;
+    }
+
+ 
+    if (
+      itemsArray[i + 1] &&
+      itemsArray[i].split("Page 2")[1] &&
+      itemsArray[i].split("Page 2")[1].includes("(") &&
+      !itemsArray[i].split("Page 2").includes(")")
+    ) {
+      console.log(
+        "itemArray: ",
+        i,
+        ":",
+        itemsArray[i].split("Page 2")[1].includes("(") &&
+          !itemsArray[i].split("Page 2").includes(")")
+      );
+      //am ramas aici  - genereaza eroare la linia 577
+      itemsArray[i] = (itemsArray[i].split("Page 2")[1] + "\n" + itemsArray[i + 1] + "nextI ").trim();
+    }
+
+    if (
+      bool ||
       itemsArray[i].includes("www.autel.com") ||
       itemsArray[i].includes("Test Time:") ||
       itemsArray[i].includes("MaxiPro") ||
@@ -538,8 +564,15 @@ const createPdf = async (
         });
 
         if (itemsArray[i].length > 70) {
+          
+          
           let itemsArrayRows = itemsArray[i].split("\n");
           //console.log(itemsArrayRows);
+
+          if(itemsArrayRows[1].includes("nextI")) {
+            itemsArrayRows[1] = itemsArrayRows[1].split("nextI")[0];
+            i = i + 1;
+          }
 
           firstPage.drawText(itemsArrayRows[0], {
             x: 16 + 5,
@@ -547,6 +580,7 @@ const createPdf = async (
             size: 12,
             font: timesNewRomanFont,
           });
+
 
           firstPage.drawText(itemsArrayRows[1], {
             x: 16 + 5,
@@ -618,7 +652,7 @@ const createPdf = async (
   let secondPage = null;
   let thirdPage = null;
 
-  console.log("itemsArray length: ", itemsArray.length);
+  console.log("itemsArray ", itemsArray);
 
   if (itemsArray.length > 15) {
     secondPage = pdfDoc.addPage();
@@ -667,17 +701,46 @@ const createPdf = async (
     itemsHeight = height - 32;
     y = height - 36;
 
+    let finalBool = false;
+
     while (i < itemsArray.length && itemsHeight > 100) {
+      let bool = true;
+      let boolCD = false;
+
+      if (itemsArray[i].includes("DTC")) {
+        finalBool = true;
+        console.log("finalBool", finalBool);
+      }
+
+      if (itemsArray[i].includes("Page 2")) {
+        console.log("page 2", itemsArray[i].split("Page 2")[1]);
+        bool = false;
+        itemsArray[i] = itemsArray[i].split("Page 2")[1].trim();
+      }
+
       if (
-        itemsArray[i].includes("www.autel.com") ||
-        itemsArray[i].includes("Test Time:") ||
-        itemsArray[i].includes("MaxiPro") ||
-        itemsArray[i].includes("MaxiPRO") ||
-        itemsArray[i].includes("page") ||
-        (itemsArray[i].split(" ")[0].length == 4 &&
-          !isNaN(itemsArray[i].split(" ")[0]))
+        carDescription.replace(/\s+/g, "") === itemsArray[i].replace(/\s+/g, "")
+      ) {
+        boolCD = true;
+      }
+
+      if (
+        itemsArray[i].trim() === "" ||
+        finalBool ||
+        (bool &&
+          (boolCD ||
+            itemsArray[i].includes("www.autel.com") ||
+            itemsArray[i].includes("Test Time:") ||
+            itemsArray[i].includes("MaxiPro") ||
+            itemsArray[i].includes("MaxiPRO") ||
+            itemsArray[i].includes(carDescription) ||
+            itemsArray[i].includes("page") ||
+            itemsArray[i].trim() === "" ||
+            (itemsArray[i].split(" ")[0].length == 4 &&
+              !isNaN(itemsArray[i].split(" ")[0]))))
       ) {
       } else {
+        bool = false;
         if (even) {
           y = y - 26;
           itemsHeight = itemsHeight - 26;
@@ -1245,7 +1308,7 @@ const parsePdftoText = (fileName) => {
     let startTableIndex = 0;
     let finishTableIndex = 0;
 
-    console.log(chunks);
+    console.log("chunks", chunks);
 
     let j = 0;
 
