@@ -2,6 +2,7 @@ const { PDFDocument, StandardFonts, degrees, rgb } = require("pdf-lib");
 const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const pdfText = require("pdf-text");
+const exec = require("child_process").exec;
 
 const util = require("util");
 const path = require("path");
@@ -1294,6 +1295,13 @@ const createPdf = async (
 
   const pdfBytes = await pdfDoc.save();
   fs.writeFile(pathWrite, pdfBytes, () => {
+    exec("open_pdf.bat", (err, stdout, stderr) => {
+      if(err) {
+        console.log(err);
+        return;
+      }
+    })
+
     console.log("done");
   });
 };
